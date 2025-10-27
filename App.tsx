@@ -13,12 +13,51 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "./src/config";
+import ScannerScreen from "./src/screens/ScannerScreen";
+import ResultsScreen from "./src/screens/ResultsScreen";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-const Stack = createNativeStackNavigator();
+// Define navigation types
+type RootStackParamList = {
+  Login: undefined;
+  Scanner: undefined;
+  Results: {
+    nutritionData: {
+      calories?: number;
+      totalFat?: number;
+      saturatedFat?: number;
+      transFat?: number;
+      cholesterol?: number;
+      sodium?: number;
+      totalCarbohydrates?: number;
+      dietaryFiber?: number;
+      sugars?: number;
+      protein?: number;
+      servingSize?: string;
+    };
+    healthScore: {
+      overallScore: number;
+      breakdown: {
+        sugarScore: number;
+        fatScore: number;
+        sodiumScore: number;
+        calorieScore: number;
+      };
+      warnings: string[];
+      recommendations: string[];
+      category: "Excellent" | "Good" | "Fair" | "Poor" | "Very Poor";
+    };
+  };
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Login screen component
-function LoginScreen() {
+type LoginScreenProps = NativeStackScreenProps<RootStackParamList, "Login">;
+
+function LoginScreen({ navigation }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -68,14 +107,27 @@ function LoginScreen() {
         throw new Error(data.error || "Something went wrong");
       }
 
-      // Success!
-      Alert.alert(
-        "Success! 🎉",
-        `${
-          isLoginMode ? "Login" : "Registration"
-        } successful!\n\nToken received: ${data.token.substring(0, 20)}...`,
-        [{ text: "OK" }]
-      );
+      // Store the token
+      await AsyncStorage.setItem("authToken", data.token);
+      await AsyncStorage.setItem("userEmail", data.user.email);
+
+      // Success! Navigate to Scanner screen
+      if (isLoginMode) {
+        // Login successful - navigate to Scanner
+        navigation.replace("Scanner");
+      } else {
+        // Registration successful - show alert then navigate
+        Alert.alert(
+          "Success! 🎉",
+          "Registration successful! Welcome to NutriScore AI.",
+          [
+            {
+              text: "OK",
+              onPress: () => navigation.replace("Scanner"),
+            },
+          ]
+        );
+      }
 
       console.log("User data:", data.user);
       console.log("Token:", data.token);
@@ -165,6 +217,16 @@ export default function App() {
           name="Login"
           component={LoginScreen}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Scanner"
+          component={ScannerScreen}
+          options={{ title: "Scan Nutrition Label" }}
+        />
+        <Stack.Screen
+          name="Results"
+          component={ResultsScreen}
+          options={{ title: "Analysis Results" }}
         />
       </Stack.Navigator>
       <StatusBar style="auto" />

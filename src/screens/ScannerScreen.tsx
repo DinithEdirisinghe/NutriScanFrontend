@@ -9,8 +9,12 @@ import {
   ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from "../config";
+import { useNavigation } from "@react-navigation/native";
 
 export default function ScannerScreen() {
+  const navigation = useNavigation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
 
@@ -60,12 +64,84 @@ export default function ScannerScreen() {
     }
   };
 
-  // Placeholder for scan functionality (Phase 3)
-  const handleScan = () => {
-    Alert.alert(
-      "Coming Soon",
-      "Nutrition label scanning will be implemented in Phase 3 with OCR and AI scoring!"
-    );
+  // Analyze nutrition label
+  const handleScan = async () => {
+    if (!selectedImage) {
+      Alert.alert("No Image", "Please select an image first");
+      return;
+    }
+
+    setIsScanning(true);
+
+    try {
+      // Get stored token
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) {
+        Alert.alert("Error", "Please login first");
+        setIsScanning(false);
+        return;
+      }
+
+      // Create FormData
+      const formData = new FormData();
+
+      // Add image file
+      const uriParts = selectedImage.split(".");
+      const fileType = uriParts[uriParts.length - 1];
+
+      formData.append("image", {
+        uri: selectedImage,
+        name: `nutrition-label.${fileType}`,
+        type: `image/${fileType}`,
+      } as any);
+
+      console.log("📤 Uploading image to backend...");
+      console.log("📍 URL:", `${API_BASE_URL}/scan/analyze`);
+      console.log("🔑 Token:", token ? "Present" : "Missing");
+
+      // Send to backend
+      const response = await fetch(`${API_BASE_URL}/scan/analyze`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Don't set Content-Type - let browser set it with boundary for FormData
+        },
+        body: formData,
+      });
+
+      console.log("📡 Response status:", response.status);
+      console.log("📡 Response headers:", response.headers);
+
+      // Check if response is ok before parsing
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Error response:", errorText);
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("📥 Response data:", JSON.stringify(data, null, 2));
+
+      setIsScanning(false);
+
+      // Navigate to results screen
+      (navigation as any).navigate("Results", {
+        nutritionData: data.nutritionData,
+        healthScore: data.healthScore,
+      });
+
+      // Clear image after successful scan
+      setSelectedImage(null);
+    } catch (error) {
+      console.error("❌ Scan error:", error);
+      setIsScanning(false);
+      Alert.alert(
+        "Error",
+        error instanceof Error
+          ? error.message
+          : "Failed to analyze nutrition label"
+      );
+    }
   };
 
   return (
