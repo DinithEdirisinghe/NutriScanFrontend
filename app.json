@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "NutriScore AI",
+    "slug": "nutriscore-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "platforms": ["ios", "android"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nutriscore.app"
+    },
+    "android": {
+      "package": "com.nutriscore.app"
+    }
+  }
+}
