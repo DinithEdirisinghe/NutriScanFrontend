@@ -147,13 +147,21 @@ export default function ScannerScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.emoji}>📷</Text>
-          <Text style={styles.title}>Scan Nutrition Label</Text>
-          <Text style={styles.subtitle}>
-            Take a photo or select an image of a nutrition label
-          </Text>
+        {/* Header with Profile Button */}
+        <View style={styles.headerContainer}>
+          <View style={styles.header}>
+            <Text style={styles.emoji}>📷</Text>
+            <Text style={styles.title}>Scan Nutrition Label</Text>
+            <Text style={styles.subtitle}>
+              Take a photo or select an image of a nutrition label
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => (navigation as any).navigate("Profile")}
+          >
+            <Text style={styles.profileButtonText}>👤 Health Profile</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Image Preview */}
@@ -217,10 +225,24 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  headerContainer: {
+    marginBottom: 20,
+  },
   header: {
     alignItems: "center",
     marginTop: 20,
-    marginBottom: 30,
+    marginBottom: 15,
+  },
+  profileButton: {
+    backgroundColor: "#9C27B0",
+    borderRadius: 10,
+    padding: 12,
+    alignItems: "center",
+  },
+  profileButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   emoji: {
     fontSize: 60,
