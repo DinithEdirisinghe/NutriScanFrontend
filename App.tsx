@@ -18,6 +18,7 @@ import { API_BASE_URL } from "./src/config";
 import ScannerScreen from "./src/screens/ScannerScreen";
 import ResultsScreen from "./src/screens/ResultsScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
+import HistoryScreen from "./src/screens/HistoryScreen";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 // Define navigation types
@@ -25,6 +26,7 @@ type RootStackParamList = {
   Login: undefined;
   Scanner: undefined;
   Profile: undefined;
+  History: undefined;
   Results: {
     nutritionData: {
       calories?: number;
@@ -229,6 +231,11 @@ export default function App() {
           name="Profile"
           component={ProfileScreen}
           options={{ title: "Health Profile" }}
+        />
+        <Stack.Screen
+          name="History"
+          component={HistoryScreen}
+          options={{ title: "Scan History" }}
         />
         <Stack.Screen
           name="Results"

@@ -17,6 +17,7 @@ export default function ScannerScreen() {
   const navigation = useNavigation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanMode, setScanMode] = useState<"label" | "food">("label"); // New state!
 
   // Request camera permissions
   const requestPermissions = async () => {
@@ -99,8 +100,13 @@ export default function ScannerScreen() {
       console.log("📍 URL:", `${API_BASE_URL}/scan/analyze`);
       console.log("🔑 Token:", token ? "Present" : "Missing");
 
+      // Choose endpoint based on scan mode
+      const endpoint =
+        scanMode === "label" ? "/scan/analyze" : "/scan/food-photo";
+      console.log(`📍 Using endpoint: ${endpoint} (mode: ${scanMode})`);
+
       // Send to backend
-      const response = await fetch(`${API_BASE_URL}/scan/analyze`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -124,10 +130,16 @@ export default function ScannerScreen() {
 
       setIsScanning(false);
 
-      // Navigate to results screen
+      // Navigate to results screen with food data if available
       (navigation as any).navigate("Results", {
         nutritionData: data.nutritionData,
         healthScore: data.healthScore,
+        aiAdvice: data.aiAdvice,
+        // Food photo specific data
+        scanType: data.scanType,
+        foodName: data.foodName,
+        confidence: data.confidence,
+        disclaimer: data.disclaimer,
       });
 
       // Clear image after successful scan
@@ -151,16 +163,71 @@ export default function ScannerScreen() {
         <View style={styles.headerContainer}>
           <View style={styles.header}>
             <Text style={styles.emoji}>📷</Text>
-            <Text style={styles.title}>Scan Nutrition Label</Text>
+            <Text style={styles.title}>Scan Food</Text>
             <Text style={styles.subtitle}>
-              Take a photo or select an image of a nutrition label
+              {scanMode === "label"
+                ? "Scan nutrition label for accurate values"
+                : "Scan actual food for AI estimation"}
             </Text>
           </View>
+          <View style={styles.topButtons}>
+            <TouchableOpacity
+              style={styles.profileButton}
+              onPress={() => (navigation as any).navigate("Profile")}
+            >
+              <Text style={styles.profileButtonText}>👤 Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.historyButton}
+              onPress={() => (navigation as any).navigate("History")}
+            >
+              <Text style={styles.historyButtonText}>📜 History</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Scan Mode Toggle */}
+        <View style={styles.modeToggleContainer}>
           <TouchableOpacity
-            style={styles.profileButton}
-            onPress={() => (navigation as any).navigate("Profile")}
+            style={[
+              styles.modeButton,
+              scanMode === "label" && styles.modeButtonActive,
+            ]}
+            onPress={() => {
+              setScanMode("label");
+              setSelectedImage(null); // Clear image when switching modes
+            }}
           >
-            <Text style={styles.profileButtonText}>👤 Health Profile</Text>
+            <Text
+              style={[
+                styles.modeButtonText,
+                scanMode === "label" && styles.modeButtonTextActive,
+              ]}
+            >
+              📊 Nutrition Label
+            </Text>
+            <Text style={styles.modeSubtext}>Most Accurate</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.modeButton,
+              scanMode === "food" && styles.modeButtonActive,
+            ]}
+            onPress={() => {
+              setScanMode("food");
+              setSelectedImage(null); // Clear image when switching modes
+            }}
+          >
+            <Text
+              style={[
+                styles.modeButtonText,
+                scanMode === "food" && styles.modeButtonTextActive,
+              ]}
+            >
+              🍔 Food Photo
+            </Text>
+            <Text style={styles.modeSubtext}>AI Estimation</Text>
           </TouchableOpacity>
         </View>
 
@@ -176,7 +243,11 @@ export default function ScannerScreen() {
               {isScanning ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.scanButtonText}>🔍 Analyze Label</Text>
+                <Text style={styles.scanButtonText}>
+                  {scanMode === "label"
+                    ? "🔍 Analyze Label"
+                    : "🤖 Analyze Food"}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -233,7 +304,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 15,
   },
+  topButtons: {
+    flexDirection: "row",
+    gap: 10,
+  },
   profileButton: {
+    flex: 1,
     backgroundColor: "#9C27B0",
     borderRadius: 10,
     padding: 12,
@@ -241,7 +317,19 @@ const styles = StyleSheet.create({
   },
   profileButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  historyButton: {
+    flex: 1,
+    backgroundColor: "#4CAF50",
+    borderRadius: 10,
+    padding: 12,
+    alignItems: "center",
+  },
+  historyButtonText: {
+    color: "#fff",
+    fontSize: 14,
     fontWeight: "bold",
   },
   emoji: {
@@ -258,6 +346,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     textAlign: "center",
+  },
+  modeToggleContainer: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 20,
+  },
+  modeButton: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 15,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#ddd",
+  },
+  modeButtonActive: {
+    backgroundColor: "#E3F2FD",
+    borderColor: "#2196F3",
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
+    marginBottom: 4,
+  },
+  modeButtonTextActive: {
+    color: "#2196F3",
+    fontWeight: "bold",
+  },
+  modeSubtext: {
+    fontSize: 11,
+    color: "#999",
   },
   imageContainer: {
     alignItems: "center",

@@ -35,18 +35,38 @@ interface HealthScore {
   category: "Excellent" | "Good" | "Fair" | "Poor" | "Very Poor";
 }
 
+interface AIAdvice {
+  explanation: string;
+  healthyAlternatives: string[];
+  detailedAdvice: string;
+}
+
 interface Props {
   route: {
     params: {
       nutritionData: NutritionData;
       healthScore: HealthScore;
+      aiAdvice?: AIAdvice;
+      // Food photo specific fields
+      scanType?: "food-photo" | "label";
+      foodName?: string;
+      confidence?: "high" | "medium" | "low";
+      disclaimer?: string;
     };
   };
 }
 
 export default function ResultsScreen({ route }: Props) {
   const navigation = useNavigation();
-  const { nutritionData, healthScore } = route.params;
+  const {
+    nutritionData,
+    healthScore,
+    aiAdvice,
+    scanType,
+    foodName,
+    confidence,
+    disclaimer,
+  } = route.params;
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "#4CAF50"; // Green
@@ -75,6 +95,24 @@ export default function ResultsScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Food Recognition Header (if food photo) */}
+      {scanType === "food-photo" && foodName && (
+        <View style={styles.foodRecognitionCard}>
+          <Text style={styles.foodNameTitle}>🍽️ Identified Food</Text>
+          <Text style={styles.foodName}>{foodName}</Text>
+          <View style={styles.confidenceBadge}>
+            <Text style={styles.confidenceText}>
+              Confidence: {confidence?.toUpperCase() || "MEDIUM"}
+            </Text>
+          </View>
+          {disclaimer && (
+            <View style={styles.disclaimerBox}>
+              <Text style={styles.disclaimerText}>{disclaimer}</Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Score Card */}
       <View style={styles.scoreCard}>
         <Text style={styles.scoreTitle}>Health Score</Text>
@@ -213,6 +251,39 @@ export default function ResultsScreen({ route }: Props) {
               <Text style={styles.recommendationText}>{rec}</Text>
             </View>
           ))}
+        </View>
+      )}
+
+      {/* AI Health Advisor */}
+      {aiAdvice && (
+        <View style={styles.aiSection}>
+          <Text style={styles.aiSectionTitle}>🤖 AI Health Advisor</Text>
+
+          {/* AI Explanation */}
+          <View style={styles.aiExplanation}>
+            <Text style={styles.aiExplanationText}>{aiAdvice.explanation}</Text>
+          </View>
+
+          {/* Healthy Alternatives */}
+          {aiAdvice.healthyAlternatives.length > 0 && (
+            <View style={styles.alternativesContainer}>
+              <Text style={styles.alternativesTitle}>
+                ✅ Better Alternatives:
+              </Text>
+              {aiAdvice.healthyAlternatives.map((alt, index) => (
+                <View key={index} style={styles.alternativeItem}>
+                  <Text style={styles.alternativeText}>• {alt}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Detailed Advice */}
+          <View style={styles.aiDetailedAdvice}>
+            <Text style={styles.aiDetailedAdviceText}>
+              {aiAdvice.detailedAdvice}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -416,6 +487,108 @@ const styles = StyleSheet.create({
   recommendationText: {
     fontSize: 14,
     color: "#1565C0",
+  },
+  aiSection: {
+    backgroundColor: "#F3E5F5",
+    padding: 20,
+    marginBottom: 15,
+    marginHorizontal: 15,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#9C27B0",
+  },
+  aiSectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#6A1B9A",
+    marginBottom: 15,
+  },
+  aiExplanation: {
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  aiExplanationText: {
+    fontSize: 15,
+    color: "#333",
+    lineHeight: 22,
+  },
+  alternativesContainer: {
+    backgroundColor: "#E8F5E9",
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  alternativesTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    marginBottom: 10,
+  },
+  alternativeItem: {
+    marginBottom: 6,
+  },
+  alternativeText: {
+    fontSize: 14,
+    color: "#1B5E20",
+    lineHeight: 20,
+  },
+  aiDetailedAdvice: {
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 8,
+  },
+  aiDetailedAdviceText: {
+    fontSize: 14,
+    color: "#555",
+    lineHeight: 20,
+    fontStyle: "italic",
+  },
+  foodRecognitionCard: {
+    backgroundColor: "#FFF3E0",
+    padding: 20,
+    marginBottom: 15,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#FF9800",
+  },
+  foodNameTitle: {
+    fontSize: 14,
+    color: "#E65100",
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  foodName: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#E65100",
+    marginBottom: 10,
+  },
+  confidenceBadge: {
+    backgroundColor: "#FFE0B2",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    alignSelf: "flex-start",
+    marginBottom: 10,
+  },
+  confidenceText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#E65100",
+  },
+  disclaimerBox: {
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#FF9800",
+  },
+  disclaimerText: {
+    fontSize: 13,
+    color: "#666",
+    lineHeight: 18,
   },
   buttonContainer: {
     padding: 20,
