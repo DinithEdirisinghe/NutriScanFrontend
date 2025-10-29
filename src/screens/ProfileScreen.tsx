@@ -45,6 +45,11 @@ export default function ProfileScreen() {
   const [crp, setCrp] = useState("");
   const [uricAcid, setUricAcid] = useState("");
 
+  // Scoring preferences
+  const [scoringMode, setScoringMode] = useState<"portion-aware" | "per-100g">(
+    "portion-aware"
+  );
+
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
 
@@ -103,6 +108,9 @@ export default function ProfileScreen() {
       setCreatinine(data.creatinine?.toString() || "");
       setCrp(data.crp?.toString() || "");
       setUricAcid(data.uric_acid?.toString() || "");
+
+      // Scoring preferences
+      setScoringMode(data.scoringMode || "portion-aware");
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to load profile");
     } finally {
@@ -151,6 +159,9 @@ export default function ProfileScreen() {
       if (creatinine) payload.creatinine = parseFloat(creatinine);
       if (crp) payload.crp = parseFloat(crp);
       if (uricAcid) payload.uric_acid = parseFloat(uricAcid);
+
+      // Scoring preferences
+      payload.scoringMode = scoringMode;
 
       const response = await fetch(`${API_BASE_URL}/user/profile`, {
         method: "PUT",
@@ -482,6 +493,81 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Scoring Preferences */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>⚙️ Scoring Preferences</Text>
+          <Text style={styles.sectionSubtitle}>
+            Choose how portion sizes affect health scores
+          </Text>
+
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.toggleOption,
+                scoringMode === "portion-aware" && styles.toggleOptionActive,
+              ]}
+              onPress={() => setScoringMode("portion-aware")}
+              disabled={isLoading}
+            >
+              <Text
+                style={[
+                  styles.toggleLabel,
+                  scoringMode === "portion-aware" && styles.toggleLabelActive,
+                ]}
+              >
+                🍽️ Portion-Aware
+              </Text>
+              <Text
+                style={[
+                  styles.toggleDescription,
+                  scoringMode === "portion-aware" &&
+                    styles.toggleDescriptionActive,
+                ]}
+              >
+                Penalizes small ultra-processed servings (Recommended)
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.toggleOption,
+                scoringMode === "per-100g" && styles.toggleOptionActive,
+              ]}
+              onPress={() => setScoringMode("per-100g")}
+              disabled={isLoading}
+            >
+              <Text
+                style={[
+                  styles.toggleLabel,
+                  scoringMode === "per-100g" && styles.toggleLabelActive,
+                ]}
+              >
+                📊 Per-100g Only
+              </Text>
+              <Text
+                style={[
+                  styles.toggleDescription,
+                  scoringMode === "per-100g" && styles.toggleDescriptionActive,
+                ]}
+              >
+                Same recipe = same score regardless of size
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>
+              💡 <Text style={styles.bold}>Portion-Aware:</Text> Small servings
+              (e.g., 15g candy) get lower scores because they're often
+              ultra-processed and encourage overconsumption.
+            </Text>
+            <Text style={styles.infoText}>
+              💡 <Text style={styles.bold}>Per-100g:</Text> All portions of the
+              same food get the same score. Better for comparing brands.
+            </Text>
+          </View>
+        </View>
+
         {/* Info Box */}
         <View style={styles.infoBox}>
           <Text style={styles.infoTitle}>💡 Personalized Scoring</Text>
@@ -641,6 +727,37 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: "600",
+  },
+  toggleContainer: {
+    gap: 12,
+  },
+  toggleOption: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: "#ddd",
+  },
+  toggleOptionActive: {
+    backgroundColor: "#E8F5E9",
+    borderColor: "#4CAF50",
+  },
+  toggleLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 6,
+  },
+  toggleLabelActive: {
+    color: "#2E7D32",
+  },
+  toggleDescription: {
+    fontSize: 13,
+    color: "#666",
+    lineHeight: 18,
+  },
+  toggleDescriptionActive: {
+    color: "#2E7D32",
   },
   saveButton: {
     backgroundColor: "#4CAF50",

@@ -6,6 +6,7 @@ export interface User {
   ldl_cholesterol_mg_dl?: number;
   weight_kg?: number;
   height_cm?: number;
+  scoringMode?: 'portion-aware' | 'per-100g';
 }
 
 // Authentication response from backend
@@ -27,6 +28,7 @@ export interface ProfileUpdatePayload {
   ldl_cholesterol_mg_dl?: number;
   weight_kg?: number;
   height_cm?: number;
+  scoringMode?: 'portion-aware' | 'per-100g';
 }
 
 // Scan result (for Phase 3)
