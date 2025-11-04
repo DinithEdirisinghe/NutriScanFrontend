@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Switch,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../config";
@@ -15,40 +16,17 @@ import { API_BASE_URL } from "../config";
 export default function ProfileScreen() {
   const [email, setEmail] = useState("");
 
-  // Blood Sugar & Diabetes
-  const [glucose, setGlucose] = useState("");
-  const [hba1c, setHba1c] = useState("");
+  // Health conditions (toggles)
+  const [hasDiabetes, setHasDiabetes] = useState(false);
+  const [hasHighCholesterol, setHasHighCholesterol] = useState(false);
+  const [hasHighBloodPressure, setHasHighBloodPressure] = useState(false);
 
-  // Cholesterol & Heart Health
-  const [ldl, setLdl] = useState("");
-  const [hdl, setHdl] = useState("");
-  const [triglycerides, setTriglycerides] = useState("");
-
-  // Blood Pressure
-  const [systolic, setSystolic] = useState("");
-  const [diastolic, setDiastolic] = useState("");
-
-  // Body Metrics
+  // Body metrics
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
-  const [waist, setWaist] = useState("");
-  const [bmi, setBmi] = useState("");
-  const [age, setAge] = useState("");
-
-  // Liver Function
-  const [alt, setAlt] = useState("");
-  const [ast, setAst] = useState("");
-  const [ggt, setGgt] = useState("");
-
-  // Kidney & Inflammation
-  const [creatinine, setCreatinine] = useState("");
-  const [crp, setCrp] = useState("");
-  const [uricAcid, setUricAcid] = useState("");
-
-  // Scoring preferences
-  const [scoringMode, setScoringMode] = useState<"portion-aware" | "per-100g">(
-    "portion-aware"
-  );
+  const [bmi, setBmi] = useState<number | null>(null);
+  const [bmiCategory, setBmiCategory] = useState("Unknown");
+  const [isHealthy, setIsHealthy] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -56,6 +34,34 @@ export default function ProfileScreen() {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  // Calculate BMI when height or weight changes
+  useEffect(() => {
+    if (weight && height) {
+      const heightM = parseFloat(height) / 100;
+      const weightKg = parseFloat(weight);
+      const bmiValue = weightKg / (heightM * heightM);
+      setBmi(Number(bmiValue.toFixed(1)));
+
+      // Determine BMI category
+      if (bmiValue < 18.5) setBmiCategory("Underweight");
+      else if (bmiValue < 25) setBmiCategory("Normal");
+      else if (bmiValue < 30) setBmiCategory("Overweight");
+      else setBmiCategory("Obese");
+
+      // Check if healthy
+      setIsHealthy(
+        !hasDiabetes &&
+          !hasHighCholesterol &&
+          !hasHighBloodPressure &&
+          bmiValue >= 18.5 &&
+          bmiValue < 25
+      );
+    } else {
+      setBmi(null);
+      setBmiCategory("Unknown");
+    }
+  }, [weight, height, hasDiabetes, hasHighCholesterol, hasHighBloodPressure]);
 
   const loadProfile = async () => {
     try {
@@ -79,38 +85,17 @@ export default function ProfileScreen() {
       const data = await response.json();
       setEmail(data.email || "");
 
-      // Blood Sugar & Diabetes
-      setGlucose(data.glucose?.toString() || "");
-      setHba1c(data.hba1c?.toString() || "");
+      // Health conditions
+      setHasDiabetes(data.hasDiabetes || false);
+      setHasHighCholesterol(data.hasHighCholesterol || false);
+      setHasHighBloodPressure(data.hasHighBloodPressure || false);
 
-      // Cholesterol & Heart Health
-      setLdl(data.ldl?.toString() || "");
-      setHdl(data.hdl?.toString() || "");
-      setTriglycerides(data.triglycerides?.toString() || "");
-
-      // Blood Pressure
-      setSystolic(data.systolic?.toString() || "");
-      setDiastolic(data.diastolic?.toString() || "");
-
-      // Body Metrics
+      // Body metrics
       setWeight(data.weight?.toString() || "");
       setHeight(data.height?.toString() || "");
-      setWaist(data.waist?.toString() || "");
-      setBmi(data.bmi?.toString() || "");
-      setAge(data.age?.toString() || "");
-
-      // Liver Function
-      setAlt(data.alt?.toString() || "");
-      setAst(data.ast?.toString() || "");
-      setGgt(data.ggt?.toString() || "");
-
-      // Kidney & Inflammation
-      setCreatinine(data.creatinine?.toString() || "");
-      setCrp(data.crp?.toString() || "");
-      setUricAcid(data.uric_acid?.toString() || "");
-
-      // Scoring preferences
-      setScoringMode(data.scoringMode || "portion-aware");
+      setBmi(data.bmi || null);
+      setBmiCategory(data.bmiCategory || "Unknown");
+      setIsHealthy(data.isHealthy || false);
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to load profile");
     } finally {
@@ -128,40 +113,14 @@ export default function ProfileScreen() {
         return;
       }
 
-      const payload: any = {};
+      const payload: any = {
+        hasDiabetes,
+        hasHighCholesterol,
+        hasHighBloodPressure,
+      };
 
-      // Blood Sugar & Diabetes
-      if (glucose) payload.glucose = parseFloat(glucose);
-      if (hba1c) payload.hba1c = parseFloat(hba1c);
-
-      // Cholesterol & Heart Health
-      if (ldl) payload.ldl = parseFloat(ldl);
-      if (hdl) payload.hdl = parseFloat(hdl);
-      if (triglycerides) payload.triglycerides = parseFloat(triglycerides);
-
-      // Blood Pressure
-      if (systolic) payload.systolic = parseInt(systolic);
-      if (diastolic) payload.diastolic = parseInt(diastolic);
-
-      // Body Metrics
       if (weight) payload.weight = parseFloat(weight);
       if (height) payload.height = parseFloat(height);
-      if (waist) payload.waist = parseFloat(waist);
-      if (bmi) payload.bmi = parseFloat(bmi);
-      if (age) payload.age = parseInt(age);
-
-      // Liver Function
-      if (alt) payload.alt = parseFloat(alt);
-      if (ast) payload.ast = parseFloat(ast);
-      if (ggt) payload.ggt = parseFloat(ggt);
-
-      // Kidney & Inflammation
-      if (creatinine) payload.creatinine = parseFloat(creatinine);
-      if (crp) payload.crp = parseFloat(crp);
-      if (uricAcid) payload.uric_acid = parseFloat(uricAcid);
-
-      // Scoring preferences
-      payload.scoringMode = scoringMode;
 
       const response = await fetch(`${API_BASE_URL}/user/profile`, {
         method: "PUT",
@@ -192,6 +151,14 @@ export default function ProfileScreen() {
     );
   }
 
+  const getBMIColor = () => {
+    if (bmiCategory === "Normal") return "#4CAF50";
+    if (bmiCategory === "Underweight") return "#FF9800";
+    if (bmiCategory === "Overweight") return "#FF9800";
+    if (bmiCategory === "Obese") return "#F44336";
+    return "#999";
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
@@ -201,27 +168,20 @@ export default function ProfileScreen() {
           <Text style={styles.title}>Health Profile</Text>
           <Text style={styles.email}>{email}</Text>
           <Text style={styles.subtitle}>
-            Complete for personalized nutrition scoring
+            Simple health tracking for personalized scores
           </Text>
         </View>
 
-        {/* Demographics */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📋 Basic Info</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Age (years)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 35"
-              placeholderTextColor="#999"
-              value={age}
-              onChangeText={setAge}
-              keyboardType="number-pad"
-              editable={!isLoading}
-            />
+        {/* Health Status Banner */}
+        {isHealthy && bmi && (
+          <View style={styles.healthyBanner}>
+            <Text style={styles.healthyEmoji}>✅</Text>
+            <Text style={styles.healthyText}>You're Healthy!</Text>
+            <Text style={styles.healthySubtext}>
+              No health conditions • Normal BMI ({bmi})
+            </Text>
           </View>
-        </View>
+        )}
 
         {/* Body Metrics */}
         <View style={styles.section}>
@@ -253,332 +213,117 @@ export default function ProfileScreen() {
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Waist Circumference (cm)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 85"
-              placeholderTextColor="#999"
-              value={waist}
-              onChangeText={setWaist}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>Measure at belly button level</Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>BMI</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 24.5"
-              placeholderTextColor="#999"
-              value={bmi}
-              onChangeText={setBmi}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-          </View>
-        </View>
-
-        {/* Blood Sugar & Diabetes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🩸 Blood Sugar & Diabetes</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Fasting Glucose (mg/dL)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 95"
-              placeholderTextColor="#999"
-              value={glucose}
-              onChangeText={setGlucose}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>
-              Normal: 70-99 • Pre-diabetes: 100-125 • Diabetes: ≥126
-            </Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>HbA1c (%)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 5.5"
-              placeholderTextColor="#999"
-              value={hba1c}
-              onChangeText={setHba1c}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>
-              Normal: &lt;5.7 • Pre-diabetes: 5.7-6.4 • Diabetes: ≥6.5
-            </Text>
-          </View>
-        </View>
-
-        {/* Cholesterol & Heart Health */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>❤️ Cholesterol & Heart</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>LDL Cholesterol (mg/dL)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 120"
-              placeholderTextColor="#999"
-              value={ldl}
-              onChangeText={setLdl}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>Optimal: &lt;100 • High: ≥160</Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>HDL Cholesterol (mg/dL)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 55"
-              placeholderTextColor="#999"
-              value={hdl}
-              onChangeText={setHdl}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>Good: ≥60 • Low: &lt;40</Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Triglycerides (mg/dL)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 150"
-              placeholderTextColor="#999"
-              value={triglycerides}
-              onChangeText={setTriglycerides}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>Normal: &lt;150 • High: ≥200</Text>
-          </View>
-        </View>
-
-        {/* Blood Pressure */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💓 Blood Pressure</Text>
-
-          <View style={styles.rowGroup}>
-            <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-              <Text style={styles.label}>Systolic</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="120"
-                placeholderTextColor="#999"
-                value={systolic}
-                onChangeText={setSystolic}
-                keyboardType="number-pad"
-                editable={!isLoading}
-              />
+          {/* BMI Display */}
+          {bmi && (
+            <View
+              style={[
+                styles.bmiBox,
+                {
+                  backgroundColor: getBMIColor() + "20",
+                  borderColor: getBMIColor(),
+                },
+              ]}
+            >
+              <Text style={styles.bmiLabel}>Your BMI</Text>
+              <Text style={[styles.bmiValue, { color: getBMIColor() }]}>
+                {bmi}
+              </Text>
+              <Text style={[styles.bmiCategory, { color: getBMIColor() }]}>
+                {bmiCategory}
+              </Text>
+              <Text style={styles.bmiHint}>
+                {bmiCategory === "Normal" && "Great! Keep it up 💪"}
+                {bmiCategory === "Underweight" && "Consider gaining weight"}
+                {bmiCategory === "Overweight" && "Consider losing weight"}
+                {bmiCategory === "Obese" && "Weight loss recommended"}
+              </Text>
             </View>
-
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Diastolic</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="80"
-                placeholderTextColor="#999"
-                value={diastolic}
-                onChangeText={setDiastolic}
-                keyboardType="number-pad"
-                editable={!isLoading}
-              />
-            </View>
-          </View>
-          <Text style={styles.hint}>Normal: &lt;120/80 • High: ≥140/90</Text>
+          )}
         </View>
 
-        {/* Liver Function */}
+        {/* Health Conditions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🫀 Liver Function</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>ALT (U/L)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 25"
-              placeholderTextColor="#999"
-              value={alt}
-              onChangeText={setAlt}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>Normal: 7-56</Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>AST (U/L)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 30"
-              placeholderTextColor="#999"
-              value={ast}
-              onChangeText={setAst}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>Normal: 10-40</Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>GGT (U/L)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 20"
-              placeholderTextColor="#999"
-              value={ggt}
-              onChangeText={setGgt}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>Normal: 0-51</Text>
-          </View>
-        </View>
-
-        {/* Kidney & Inflammation */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🩺 Kidney & Inflammation</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Creatinine (mg/dL)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 1.0"
-              placeholderTextColor="#999"
-              value={creatinine}
-              onChangeText={setCreatinine}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>Normal: 0.6-1.2</Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>CRP (mg/L)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 2.0"
-              placeholderTextColor="#999"
-              value={crp}
-              onChangeText={setCrp}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>Low risk: &lt;1 • High: &gt;3</Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Uric Acid (mg/dL)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 5.5"
-              placeholderTextColor="#999"
-              value={uricAcid}
-              onChangeText={setUricAcid}
-              keyboardType="decimal-pad"
-              editable={!isLoading}
-            />
-            <Text style={styles.hint}>Normal: 2.4-7.0</Text>
-          </View>
-        </View>
-
-        {/* Scoring Preferences */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚙️ Scoring Preferences</Text>
+          <Text style={styles.sectionTitle}>🏥 Health Conditions</Text>
           <Text style={styles.sectionSubtitle}>
-            Choose how portion sizes affect health scores
+            Toggle ON if you have any of these conditions
           </Text>
 
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[
-                styles.toggleOption,
-                scoringMode === "portion-aware" && styles.toggleOptionActive,
-              ]}
-              onPress={() => setScoringMode("portion-aware")}
+          {/* Diabetes Toggle */}
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleInfo}>
+              <Text style={styles.toggleLabel}>🩸 Diabetes</Text>
+              <Text style={styles.toggleDescription}>
+                Scores prioritize low-sugar foods
+              </Text>
+            </View>
+            <Switch
+              value={hasDiabetes}
+              onValueChange={setHasDiabetes}
+              trackColor={{ false: "#ddd", true: "#81C784" }}
+              thumbColor={hasDiabetes ? "#4CAF50" : "#f4f3f4"}
               disabled={isLoading}
-            >
-              <Text
-                style={[
-                  styles.toggleLabel,
-                  scoringMode === "portion-aware" && styles.toggleLabelActive,
-                ]}
-              >
-                🍽️ Portion-Aware
-              </Text>
-              <Text
-                style={[
-                  styles.toggleDescription,
-                  scoringMode === "portion-aware" &&
-                    styles.toggleDescriptionActive,
-                ]}
-              >
-                Penalizes small ultra-processed servings (Recommended)
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.toggleOption,
-                scoringMode === "per-100g" && styles.toggleOptionActive,
-              ]}
-              onPress={() => setScoringMode("per-100g")}
-              disabled={isLoading}
-            >
-              <Text
-                style={[
-                  styles.toggleLabel,
-                  scoringMode === "per-100g" && styles.toggleLabelActive,
-                ]}
-              >
-                📊 Per-100g Only
-              </Text>
-              <Text
-                style={[
-                  styles.toggleDescription,
-                  scoringMode === "per-100g" && styles.toggleDescriptionActive,
-                ]}
-              >
-                Same recipe = same score regardless of size
-              </Text>
-            </TouchableOpacity>
+            />
           </View>
 
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
-              💡 <Text style={styles.bold}>Portion-Aware:</Text> Small servings
-              (e.g., 15g candy) get lower scores because they're often
-              ultra-processed and encourage overconsumption.
-            </Text>
-            <Text style={styles.infoText}>
-              💡 <Text style={styles.bold}>Per-100g:</Text> All portions of the
-              same food get the same score. Better for comparing brands.
-            </Text>
+          {/* High Cholesterol Toggle */}
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleInfo}>
+              <Text style={styles.toggleLabel}>❤️ High Cholesterol</Text>
+              <Text style={styles.toggleDescription}>
+                Scores prioritize low-fat foods
+              </Text>
+            </View>
+            <Switch
+              value={hasHighCholesterol}
+              onValueChange={setHasHighCholesterol}
+              trackColor={{ false: "#ddd", true: "#81C784" }}
+              thumbColor={hasHighCholesterol ? "#4CAF50" : "#f4f3f4"}
+              disabled={isLoading}
+            />
+          </View>
+
+          {/* High Blood Pressure Toggle */}
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleInfo}>
+              <Text style={styles.toggleLabel}>💓 High Blood Pressure</Text>
+              <Text style={styles.toggleDescription}>
+                Scores prioritize low-sodium foods
+              </Text>
+            </View>
+            <Switch
+              value={hasHighBloodPressure}
+              onValueChange={setHasHighBloodPressure}
+              trackColor={{ false: "#ddd", true: "#81C784" }}
+              thumbColor={hasHighBloodPressure ? "#4CAF50" : "#f4f3f4"}
+              disabled={isLoading}
+            />
           </View>
         </View>
 
         {/* Info Box */}
         <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>💡 Personalized Scoring</Text>
+          <Text style={styles.infoTitle}>💡 How It Works</Text>
           <Text style={styles.infoText}>
-            • More health data = more accurate scores
+            • <Text style={styles.bold}>Healthy:</Text> All nutrients weighted
+            equally
           </Text>
           <Text style={styles.infoText}>
-            • Warnings specific to YOUR health risks
+            • <Text style={styles.bold}>Diabetes:</Text> Sugar scores count more
           </Text>
           <Text style={styles.infoText}>
-            • AI recommendations tailored to your conditions
+            • <Text style={styles.bold}>High Cholesterol:</Text> Fat scores
+            count more
+          </Text>
+          <Text style={styles.infoText}>
+            • <Text style={styles.bold}>High BP:</Text> Sodium scores count more
+          </Text>
+          <Text style={styles.infoText}>
+            • <Text style={styles.bold}>Overweight/Obese:</Text> Calorie scores
+            count more
+          </Text>
+          <Text style={styles.infoText}>
+            • <Text style={styles.bold}>Underweight:</Text> High calories are
+            encouraged
           </Text>
         </View>
 
@@ -632,6 +377,29 @@ const styles = StyleSheet.create({
     color: "#999",
     fontStyle: "italic",
   },
+  healthyBanner: {
+    backgroundColor: "#E8F5E9",
+    borderRadius: 15,
+    padding: 20,
+    alignItems: "center",
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+  },
+  healthyEmoji: {
+    fontSize: 48,
+    marginBottom: 10,
+  },
+  healthyText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    marginBottom: 5,
+  },
+  healthySubtext: {
+    fontSize: 14,
+    color: "#2E7D32",
+  },
   section: {
     backgroundColor: "#fff",
     borderRadius: 15,
@@ -642,7 +410,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 15,
+    marginBottom: 10,
   },
   sectionSubtitle: {
     fontSize: 14,
@@ -651,10 +419,6 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 15,
-  },
-  rowGroup: {
-    flexDirection: "row",
-    marginBottom: 5,
   },
   label: {
     fontSize: 16,
@@ -670,39 +434,53 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
   },
-  hint: {
-    fontSize: 11,
-    color: "#999",
-    marginTop: 5,
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginTop: 6,
-  },
   bmiBox: {
-    backgroundColor: "#E8F5E9",
     borderRadius: 10,
     padding: 16,
     alignItems: "center",
     marginTop: 10,
-    marginBottom: 20,
+    borderWidth: 2,
   },
   bmiLabel: {
     fontSize: 14,
-    color: "#2E7D32",
     fontWeight: "600",
+    marginBottom: 5,
   },
   bmiValue: {
     fontSize: 42,
     fontWeight: "bold",
-    color: "#2E7D32",
     marginVertical: 8,
   },
   bmiCategory: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  bmiHint: {
+    fontSize: 13,
+    color: "#666",
+  },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  toggleInfo: {
+    flex: 1,
+    marginRight: 15,
+  },
+  toggleLabel: {
     fontSize: 16,
     fontWeight: "600",
+    color: "#333",
     marginBottom: 4,
+  },
+  toggleDescription: {
+    fontSize: 13,
+    color: "#666",
   },
   infoBox: {
     backgroundColor: "#E3F2FD",
@@ -728,62 +506,19 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: "600",
   },
-  toggleContainer: {
-    gap: 12,
-  },
-  toggleOption: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: "#ddd",
-  },
-  toggleOptionActive: {
-    backgroundColor: "#E8F5E9",
-    borderColor: "#4CAF50",
-  },
-  toggleLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 6,
-  },
-  toggleLabelActive: {
-    color: "#2E7D32",
-  },
-  toggleDescription: {
-    fontSize: 13,
-    color: "#666",
-    lineHeight: 18,
-  },
-  toggleDescriptionActive: {
-    color: "#2E7D32",
-  },
   saveButton: {
     backgroundColor: "#4CAF50",
     borderRadius: 10,
     padding: 15,
     alignItems: "center",
     marginTop: 10,
+    marginBottom: 30,
   },
   buttonDisabled: {
     backgroundColor: "#ccc",
   },
   saveButtonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  logoutButton: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 15,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ff4444",
-  },
-  logoutButtonText: {
-    color: "#ff4444",
     fontSize: 16,
     fontWeight: "bold",
   },

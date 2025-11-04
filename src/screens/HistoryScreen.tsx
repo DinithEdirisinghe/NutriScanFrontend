@@ -85,6 +85,7 @@ export default function HistoryScreen({ navigation }: any) {
         navigation.navigate("Results", {
           nutritionData: data.scan.nutritionData,
           healthScore: data.scan.healthScore,
+          aiAdvice: data.scan.aiAdvice, // Add AI advice
           scanType: data.scan.scanType,
           foodName: data.scan.foodName,
           confidence: data.scan.confidenceLevel,
