@@ -103,7 +103,7 @@ export default function ScannerScreen() {
 
       // Always use enhanced endpoint
       const endpoint = "/scan/enhanced";
-      
+
       // Add all images for enhanced mode
       selectedImages.forEach((imageUri, index) => {
         const uriParts = imageUri.split(".");
@@ -233,7 +233,8 @@ export default function ScannerScreen() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.scanButtonText}>
-                  🧠 Analyze {selectedImages.length} Photo{selectedImages.length > 1 ? "s" : ""}
+                  🧠 Analyze {selectedImages.length} Photo
+                  {selectedImages.length > 1 ? "s" : ""}
                 </Text>
               )}
             </TouchableOpacity>
@@ -278,7 +279,8 @@ export default function ScannerScreen() {
             • Ensure good lighting and clear focus
           </Text>
           <Text style={styles.infoText}>
-            • AI identifies: natural vs added sugar, healthy fats, cooking method
+            • AI identifies: natural vs added sugar, healthy fats, cooking
+            method
           </Text>
         </View>
       </View>
