@@ -47,10 +47,9 @@ interface Props {
       nutritionData: NutritionData;
       healthScore: HealthScore;
       aiAdvice?: AIAdvice;
-      // Food photo specific fields
-      scanType?: "food-photo" | "label";
       foodName?: string;
       confidence?: "high" | "medium" | "low";
+      foodContext?: any;
       disclaimer?: string;
     };
   };
@@ -62,9 +61,9 @@ export default function ResultsScreen({ route }: Props) {
     nutritionData,
     healthScore,
     aiAdvice,
-    scanType,
     foodName,
     confidence,
+    foodContext,
     disclaimer,
   } = route.params;
 
@@ -95,8 +94,8 @@ export default function ResultsScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Food Recognition Header (if food photo) */}
-      {scanType === "food-photo" && foodName && (
+      {/* Food Recognition Header */}
+      {foodName && (
         <View style={styles.foodRecognitionCard}>
           <Text style={styles.foodNameTitle}>🍽️ Identified Food</Text>
           <Text style={styles.foodName}>{foodName}</Text>

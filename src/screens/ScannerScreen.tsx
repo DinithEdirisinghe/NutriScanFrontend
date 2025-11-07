@@ -16,11 +16,8 @@ import { useNavigation } from "@react-navigation/native";
 
 export default function ScannerScreen() {
   const navigation = useNavigation();
-  const [selectedImages, setSelectedImages] = useState<string[]>([]); // Changed to array for multi-image
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isScanning, setIsScanning] = useState(false);
-  const [scanMode, setScanMode] = useState<"label" | "food" | "enhanced">(
-    "enhanced"
-  ); // Added enhanced mode
 
   // Request camera permissions
   const requestPermissions = async () => {
@@ -40,8 +37,8 @@ export default function ScannerScreen() {
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
-    // Check if we're in enhanced mode and already have 3 images
-    if (scanMode === "enhanced" && selectedImages.length >= 3) {
+    // Check if already have 3 images
+    if (selectedImages.length >= 3) {
       Alert.alert("Maximum Images", "You can only add up to 3 images");
       return;
     }
@@ -54,18 +51,14 @@ export default function ScannerScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      if (scanMode === "enhanced") {
-        setSelectedImages([...selectedImages, result.assets[0].uri]);
-      } else {
-        setSelectedImages([result.assets[0].uri]); // Single image for label/food mode
-      }
+      setSelectedImages([...selectedImages, result.assets[0].uri]);
     }
   };
 
   // Pick image from gallery
   const handlePickImage = async () => {
-    // Check if we're in enhanced mode and already have 3 images
-    if (scanMode === "enhanced" && selectedImages.length >= 3) {
+    // Check if already have 3 images
+    if (selectedImages.length >= 3) {
       Alert.alert("Maximum Images", "You can only add up to 3 images");
       return;
     }
@@ -78,11 +71,7 @@ export default function ScannerScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      if (scanMode === "enhanced") {
-        setSelectedImages([...selectedImages, result.assets[0].uri]);
-      } else {
-        setSelectedImages([result.assets[0].uri]); // Single image for label/food mode
-      }
+      setSelectedImages([...selectedImages, result.assets[0].uri]);
     }
   };
 
@@ -112,42 +101,23 @@ export default function ScannerScreen() {
       // Create FormData
       const formData = new FormData();
 
-      // Choose endpoint based on scan mode
-      let endpoint = "/scan/analyze";
-
-      if (scanMode === "enhanced") {
-        endpoint = "/scan/enhanced";
-        // Add all images for enhanced mode
-        selectedImages.forEach((imageUri, index) => {
-          const uriParts = imageUri.split(".");
-          const fileType = uriParts[uriParts.length - 1];
-
-          formData.append("images", {
-            uri: imageUri,
-            name: `food-image-${index + 1}.${fileType}`,
-            type: `image/${fileType}`,
-          } as any);
-        });
-        console.log(
-          `📤 Uploading ${selectedImages.length} image(s) to enhanced endpoint...`
-        );
-      } else {
-        // Single image for label/food mode
-        const imageUri = selectedImages[0];
+      // Always use enhanced endpoint
+      const endpoint = "/scan/enhanced";
+      
+      // Add all images for enhanced mode
+      selectedImages.forEach((imageUri, index) => {
         const uriParts = imageUri.split(".");
         const fileType = uriParts[uriParts.length - 1];
 
-        formData.append("image", {
+        formData.append("images", {
           uri: imageUri,
-          name: `nutrition-label.${fileType}`,
+          name: `food-image-${index + 1}.${fileType}`,
           type: `image/${fileType}`,
         } as any);
-
-        if (scanMode === "food") {
-          endpoint = "/scan/food-photo";
-        }
-        console.log(`� Uploading image to ${scanMode} endpoint...`);
-      }
+      });
+      console.log(
+        `📤 Uploading ${selectedImages.length} image(s) to enhanced endpoint...`
+      );
 
       console.log("📍 URL:", `${API_BASE_URL}${endpoint}`);
       console.log("🔑 Token:", token ? "Present" : "Missing");
@@ -212,11 +182,7 @@ export default function ScannerScreen() {
             <Text style={styles.emoji}>📷</Text>
             <Text style={styles.title}>Scan Food</Text>
             <Text style={styles.subtitle}>
-              {scanMode === "enhanced"
-                ? "AI analyzes 1-3 photos for intelligent context"
-                : scanMode === "label"
-                ? "Scan nutrition label for accurate values"
-                : "Scan actual food for AI estimation"}
+              AI analyzes 1-3 photos for intelligent nutrition analysis
             </Text>
           </View>
           <View style={styles.topButtons}>
@@ -233,72 +199,6 @@ export default function ScannerScreen() {
               <Text style={styles.historyButtonText}>📜 History</Text>
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* Scan Mode Toggle */}
-        <View style={styles.modeToggleContainer}>
-          <TouchableOpacity
-            style={[
-              styles.modeButton,
-              scanMode === "enhanced" && styles.modeButtonActive,
-            ]}
-            onPress={() => {
-              setScanMode("enhanced");
-              setSelectedImages([]); // Clear images when switching modes
-            }}
-          >
-            <Text
-              style={[
-                styles.modeButtonText,
-                scanMode === "enhanced" && styles.modeButtonTextActive,
-              ]}
-            >
-              🧠 AI Enhanced (1-3 photos)
-            </Text>
-            <Text style={styles.modeSubtext}>Most Intelligent</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.modeButton,
-              scanMode === "label" && styles.modeButtonActive,
-            ]}
-            onPress={() => {
-              setScanMode("label");
-              setSelectedImages([]); // Clear images when switching modes
-            }}
-          >
-            <Text
-              style={[
-                styles.modeButtonText,
-                scanMode === "label" && styles.modeButtonTextActive,
-              ]}
-            >
-              📊 Nutrition Label
-            </Text>
-            <Text style={styles.modeSubtext}>Most Accurate</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.modeButton,
-              scanMode === "food" && styles.modeButtonActive,
-            ]}
-            onPress={() => {
-              setScanMode("food");
-              setSelectedImages([]); // Clear images when switching modes
-            }}
-          >
-            <Text
-              style={[
-                styles.modeButtonText,
-                scanMode === "food" && styles.modeButtonTextActive,
-              ]}
-            >
-              🍔 Food Photo
-            </Text>
-            <Text style={styles.modeSubtext}>AI Estimation</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Image Preview */}
@@ -333,13 +233,7 @@ export default function ScannerScreen() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.scanButtonText}>
-                  {scanMode === "enhanced"
-                    ? `🧠 Analyze ${selectedImages.length} Photo${
-                        selectedImages.length > 1 ? "s" : ""
-                      }`
-                    : scanMode === "label"
-                    ? "🔍 Analyze Label"
-                    : "🤖 Analyze Food"}
+                  🧠 Analyze {selectedImages.length} Photo{selectedImages.length > 1 ? "s" : ""}
                 </Text>
               )}
             </TouchableOpacity>
@@ -371,31 +265,21 @@ export default function ScannerScreen() {
         {/* Info Box */}
         <View style={styles.infoBox}>
           <Text style={styles.infoTitle}>💡 Tips for Best Results:</Text>
-          {scanMode === "enhanced" ? (
-            <>
-              <Text style={styles.infoText}>
-                • Add 1-3 photos for better AI analysis
-              </Text>
-              <Text style={styles.infoText}>
-                • Include different angles (front, side, top)
-              </Text>
-              <Text style={styles.infoText}>
-                • Show ingredients list if available
-              </Text>
-              <Text style={styles.infoText}>
-                • AI identifies: natural vs added sugar, healthy fats, cooking
-                method
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.infoText}>• Ensure good lighting</Text>
-              <Text style={styles.infoText}>
-                • Keep the label flat and visible
-              </Text>
-              <Text style={styles.infoText}>• Avoid shadows and glare</Text>
-            </>
-          )}
+          <Text style={styles.infoText}>
+            • Add 1-3 photos for better AI analysis
+          </Text>
+          <Text style={styles.infoText}>
+            • Include different angles (front, side, top)
+          </Text>
+          <Text style={styles.infoText}>
+            • Show ingredients list if available
+          </Text>
+          <Text style={styles.infoText}>
+            • Ensure good lighting and clear focus
+          </Text>
+          <Text style={styles.infoText}>
+            • AI identifies: natural vs added sugar, healthy fats, cooking method
+          </Text>
         </View>
       </View>
     </View>
